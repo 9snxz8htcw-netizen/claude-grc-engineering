@@ -43,6 +43,7 @@ Every pull request runs the following security gates:
 | **Socket Basics** | Secret scanning, supply-chain analysis, and SAST. Secret-gated — requires `SOCKET_SECURITY_API_KEY` to be configured in the repository. |
 | **npm audit** | High/critical CVEs in npm packages across all workspaces (root, `plugins/trust-center/frontend`, `plugins/grc-portfolio/examples`). |
 | **OpenSSF Scorecard** | Supply-chain posture (branch protection, signed releases, dependency pinning) on the default branch weekly. |
+| **Docs currency check** | Fails PRs that modify code, config, or workflow files without updating `CHANGELOG.md`. Also fails PRs that add, remove, or rename workflow files without updating this file (`SECURITY.md`). |
 
 Results from CodeQL and Scorecard appear in the **Security → Code scanning** tab of the repository. OSV-Scanner findings appear as PR check annotations.
 

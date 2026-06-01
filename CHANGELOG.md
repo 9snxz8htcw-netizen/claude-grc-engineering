@@ -7,6 +7,7 @@ All notable changes follow the format from [Keep a Changelog](https://keepachang
 ### Added
 
 - **CodeQL + npm audit CI workflow.** Added `.github/workflows/codeql.yml` with two jobs: (1) CodeQL `security-extended` query suite for JavaScript/TypeScript taint-flow analysis — traces data from external sources to dangerous sinks like `exec` and `fs.readFile` — running on every PR and weekly; (2) `npm audit` matrix across all three npm workspaces (root, `plugins/trust-center/frontend`, `plugins/grc-portfolio/examples`) failing on high/critical CVEs. Complements the existing OSV-Scanner and Socket Basics workflows.
+- **Docs currency CI workflow.** Added `.github/workflows/docs-check.yml` with two jobs: (1) `changelog` — fails any PR that modifies code, config, or workflow files without touching `CHANGELOG.md`; (2) `security-md` — fails any PR that adds, removes, or renames a workflow file without updating `SECURITY.md`. Doc-only PRs are exempt from the changelog requirement.
 
 ### Security
 

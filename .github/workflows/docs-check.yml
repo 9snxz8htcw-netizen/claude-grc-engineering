@@ -1,0 +1,103 @@
+name: Docs currency check
+
+# Ensures documentation stays in sync with code changes on every PR.
+#
+# Two jobs:
+#   changelog  — fails if code/config/workflow files changed but CHANGELOG.md
+#                was not touched. Exempts doc-only PRs.
+#   security   — fails if a workflow file was added or removed without a
+#                matching update to SECURITY.md.
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    name: CHANGELOG updated
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check CHANGELOG touched when code changed
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
+
+          # Files that require a CHANGELOG entry when modified
+          CODE_CHANGED=$(echo "$CHANGED" | grep -E \
+            '^(plugins/|schemas/|scripts/|\.github/workflows/|package\.json)' \
+            | grep -Ev '^\.github/workflows/docs-check\.yml$' \
+            || true)
+
+          CHANGELOG_TOUCHED=$(echo "$CHANGED" | grep -c '^CHANGELOG\.md$' || true)
+
+          if [ -n "$CODE_CHANGED" ] && [ "$CHANGELOG_TOUCHED" -eq 0 ]; then
+            echo "::error file=CHANGELOG.md::CHANGELOG.md was not updated."
+            echo ""
+            echo "The following code/config files changed without a CHANGELOG entry:"
+            echo "$CODE_CHANGED"
+            echo ""
+            echo "Add an entry under '## [Unreleased]' in CHANGELOG.md describing"
+            echo "what changed and why, then push again."
+            exit 1
+          fi
+
+          if [ -z "$CODE_CHANGED" ]; then
+            echo "Doc-only PR — CHANGELOG not required."
+          else
+            echo "CHANGELOG.md updated. ✓"
+          fi
+
+  security-md:
+    name: SECURITY.md in sync with workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check SECURITY.md when workflows change
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
+
+          WORKFLOWS_CHANGED=$(echo "$CHANGED" | grep '^\.github/workflows/' || true)
+          SECURITY_TOUCHED=$(echo "$CHANGED" | grep -c '^SECURITY\.md$' || true)
+
+          if [ -n "$WORKFLOWS_CHANGED" ] && [ "$SECURITY_TOUCHED" -eq 0 ]; then
+            echo "::error file=SECURITY.md::SECURITY.md was not updated."
+            echo ""
+            echo "Workflow files changed:"
+            echo "$WORKFLOWS_CHANGED"
+            echo ""
+            echo "SECURITY.md contains a table of automated security controls."
+            echo "Update it to reflect any added, removed, or renamed workflows,"
+            echo "then push again."
+            exit 1
+          fi
+
+          if [ -z "$WORKFLOWS_CHANGED" ]; then
+            echo "No workflow changes — SECURITY.md check not required."
+          else
+            echo "SECURITY.md updated alongside workflow changes. ✓"
+          fi
