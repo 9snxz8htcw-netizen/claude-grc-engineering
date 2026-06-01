@@ -4,6 +4,16 @@ All notable changes follow the format from [Keep a Changelog](https://keepachang
 
 ## [Unreleased]
 
+### Added
+
+- **CodeQL + npm audit CI workflow.** Added `.github/workflows/codeql.yml` with two jobs: (1) CodeQL `security-extended` query suite for JavaScript/TypeScript taint-flow analysis — traces data from external sources to dangerous sinks like `exec` and `fs.readFile` — running on every PR and weekly; (2) `npm audit` matrix across all three npm workspaces (root, `plugins/trust-center/frontend`, `plugins/grc-portfolio/examples`) failing on high/critical CVEs. Complements the existing OSV-Scanner and Socket Basics workflows.
+
+### Security
+
+- **Command injection in `test-control.js`.** Three `exec()` calls interpolated AWS API-returned resource names (`ruleName`, `user.UserName`) into shell strings via template literals. An attacker with write access to AWS resource names could execute arbitrary commands on the host. Fixed by switching to `execFile()` with argument arrays so values are never interpreted by a shell.
+- **Symlink path traversal bypass in compliance-posture dashboard.** The static file server's `startsWith(PUBLIC_DIR)` check correctly rejected `../` traversal but did not resolve symlinks, so a symlink inside `PUBLIC_DIR` pointing outside it could bypass the guard. Fixed by adding `fs.realpath()` validation on both the public root and requested path before comparison.
+- **URL parameter injection in trust-center frontend.** `getRequests()` and `getAuditLog()` in `plugins/trust-center/frontend/src/utils/api.js` concatenated `status` and `limit` values directly into query strings. Values containing `&` could inject additional URL parameters. Fixed by switching both functions to `URLSearchParams`.
+
 ### Removed
 
 - **`vanta-bridge` plugin removed.** Vanta now ships an official Claude Code plugin (`vanta-mcp-plugin` in `anthropics/claude-plugins-official`) and an official MCP server (`mcp.vanta.com/mcp` and regional variants). The community bridge predated both and added a manual-export step that's now obsolete. Users should install Vanta's official plugin instead — see [GHSA #150](https://github.com/GRCEngClub/claude-grc-engineering/issues/150). Drops the bridge plugin, marketplace registration, test fixtures, and documentation references.
