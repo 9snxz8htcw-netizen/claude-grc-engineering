@@ -81,7 +81,9 @@ export async function deleteDocument(docId, token) {
 }
 
 export async function getRequests(token, status = '') {
-  const query = status ? `?status=${status}` : ''
+  const params = new URLSearchParams()
+  if (status) params.append('status', status)
+  const query = status ? `?${params.toString()}` : ''
   return request(`/admin/requests${query}`, { token })
 }
 
@@ -94,5 +96,6 @@ export async function updateRequest(requestId, documentId, status, token) {
 }
 
 export async function getAuditLog(token, limit = 50) {
-  return request(`/admin/audit-log?limit=${limit}`, { token })
+  const params = new URLSearchParams({ limit: String(limit) })
+  return request(`/admin/audit-log?${params.toString()}`, { token })
 }

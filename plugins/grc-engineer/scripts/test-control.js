@@ -10,9 +10,10 @@
  * - Integration tests (works with other controls)
  */
 
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
@@ -220,7 +221,7 @@ class ControlTester {
           if (rules.length > 0) {
             // Check last execution
             const ruleName = rules[0].Name;
-            const { stdout: targetStdout } = await execPromise(`aws events list-targets-by-rule --rule ${ruleName}`);
+            const { stdout: targetStdout } = await execFilePromise('aws', ['events', 'list-targets-by-rule', '--rule', ruleName]);
             const targets = JSON.parse(targetStdout).Targets;
 
             // For demo purposes, simulate checking last review date
@@ -281,7 +282,7 @@ class ControlTester {
 
         for (const user of users) {
           try {
-            const { stdout: tagStdout } = await execPromise(`aws iam list-user-tags --user-name ${user.UserName}`);
+            const { stdout: tagStdout } = await execFilePromise('aws', ['iam', 'list-user-tags', '--user-name', user.UserName]);
             const tags = JSON.parse(tagStdout).Tags;
 
             const hasCreator = tags.some(t => t.Key === 'Creator');
@@ -367,7 +368,7 @@ class ControlTester {
 
         for (const user of users) {
           try {
-            const { stdout: userStdout } = await execPromise(`aws iam get-user --user-name ${user.UserName}`);
+            const { stdout: userStdout } = await execFilePromise('aws', ['iam', 'get-user', '--user-name', user.UserName]);
             const userData = JSON.parse(userStdout).User;
 
             if (userData.PermissionsBoundary) {

@@ -193,6 +193,7 @@ Everyone who lands a merged PR shows up on the [contributors graph](https://gith
 ## Security
 
 - **Reporting vulnerabilities**: open a [private security advisory](https://github.com/GRCEngClub/claude-grc-engineering/security/advisories/new) on GitHub. Don't file public issues for security problems.
+- **CI security gates**: every PR runs CodeQL taint-flow analysis, OSV-Scanner dependency CVE checks, Socket Basics secret scanning, and npm audit. See `SECURITY.md` for the full list of automated controls and what each tool catches.
 - **Secrets**: never commit credentials, tokens, org IDs, or internal URLs. The repo ships a `pre-commit` configuration that runs [`detect-secrets`](https://github.com/Yelp/detect-secrets), markdown linting, large-file checks, and Finding-schema validation before commits. Install it before opening a PR:
 
   ```bash

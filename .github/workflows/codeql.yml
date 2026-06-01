@@ -1,0 +1,93 @@
+name: CodeQL
+
+# Deep SAST via GitHub's CodeQL engine. Performs taint-flow analysis on
+# JavaScript/TypeScript — traces data from external sources (JSON.parse,
+# CLI args, HTTP requests) to dangerous sinks (exec, fs.readFile, eval)
+# and catches injection-class vulnerabilities that pattern-only scanners miss.
+#
+# Complements OSV-Scanner (dependency CVEs) and Socket Basics (secret scanning).
+# Results appear in the GitHub Security → Code scanning tab as SARIF findings.
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 8 * * 1'  # Monday 08:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: CodeQL analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          # security-extended includes:
+          #   - Command injection (exec + tainted input)
+          #   - Path traversal (fs.readFile + tainted path)
+          #   - Prototype pollution
+          #   - XSS (DOM sinks)
+          #   - SSRF (fetch + tainted URL)
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        with:
+          category: /language:javascript-typescript
+
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - .
+          - plugins/trust-center/frontend
+          - plugins/grc-portfolio/examples
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: npm install --ignore-scripts
+
+      - name: Run npm audit
+        working-directory: ${{ matrix.workspace }}
+        # --audit-level=high: fail only on high/critical, warn on moderate
+        run: npm audit --audit-level=high

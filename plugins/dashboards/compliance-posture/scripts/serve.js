@@ -241,6 +241,19 @@ async function sendStatic(req, res) {
     res.end('Forbidden');
     return;
   }
+  // Resolve symlinks to prevent symlink-based path traversal bypass
+  try {
+    const realPublic = await fs.realpath(PUBLIC_DIR);
+    const realFull = await fs.realpath(full);
+    if (!realFull.startsWith(realPublic + path.sep) && realFull !== realPublic) {
+      if (res.writableEnded) return;
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+  } catch {
+    // realpath fails if the file doesn't exist; let readFile produce the 404
+  }
   try {
     const body = await fs.readFile(full);
     if (res.writableEnded) return;

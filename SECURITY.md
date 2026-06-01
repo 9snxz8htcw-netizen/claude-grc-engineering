@@ -32,6 +32,20 @@ extra reproduction detail or environment context before we publish a fix.
 | `main` | Yes |
 | Earlier releases | Best effort only |
 
+## Automated security controls
+
+Every pull request runs the following security gates:
+
+| Tool | What it checks |
+| --- | --- |
+| **CodeQL** (`security-extended`) | Taint-flow analysis for JavaScript/TypeScript — traces data from external sources (JSON.parse, HTTP responses, CLI args) to dangerous sinks (exec, fs operations, eval). Catches injection-class vulnerabilities that pattern-only scanners miss. |
+| **OSV-Scanner** | Dependency CVEs against the OSV.dev database. Runs on PRs (new vulns only) and weekly (newly disclosed CVEs in pinned deps). |
+| **Socket Basics** | Secret scanning, supply-chain analysis, and SAST. Secret-gated — requires `SOCKET_SECURITY_API_KEY` to be configured in the repository. |
+| **npm audit** | High/critical CVEs in npm packages across all workspaces (root, `plugins/trust-center/frontend`, `plugins/grc-portfolio/examples`). |
+| **OpenSSF Scorecard** | Supply-chain posture (branch protection, signed releases, dependency pinning) on the default branch weekly. |
+
+Results from CodeQL and Scorecard appear in the **Security → Code scanning** tab of the repository. OSV-Scanner findings appear as PR check annotations.
+
 ## Secure contribution expectations
 
 For everyday contribution guidance, secure handling of evidence artifacts, and
